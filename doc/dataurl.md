@@ -1,4 +1,4 @@
-# Data URL
+# use Data URL to encode embeddings for persistent storage/exchange
 
 - allows to encode arbitrary data in a URI
 - not (meant to be) resolvable, because it just provides all the information explicitly encoded in the URL
@@ -25,7 +25,7 @@ for converting an array of 16-bit floats into a base64 encoding:
   - break the (16 bit) float into 3 chunks of 6 bits (i.e., 18 bits, so add two `0` bits before the numerical value)
   - map each 6bit group to an ASCII/base64 character
 - concatenate the base64 characters
-- for a list of 50 16-bit floats, we need 50 x 18 / 6 = 150 characters.
+- for a list of 50 16-bit floats, we need 50 x 18 / 6 = 150 characters/bytes.
 
 > note that this will only work for plain list of floats (or doubles, or halves, etc.). If we have tensors (lists of lists of (etc.) floats), we need to encode the dimensionality directly. this could not be done with current RFC conventions.
 
@@ -35,7 +35,7 @@ alternative conversion:
 - group each group of 6 continuous bits
 - map each group to an ASCII/base64 character
 
-for a list of 50 16-bit floats, we need 50 x 16 / 6 = 134 characters
+for a list of 50 16-bit floats, we need 50 x 16 / 6 = 134 characters/bytes
 
 > the alternative conversion will is about 10% more compact, but is (IMHO) less easily interpretable/processable
 
@@ -43,9 +43,9 @@ for a list of 50 16-bit floats, we need 50 x 16 / 6 = 134 characters
 
 - PRO
   - fairly compact encoding, using a widely used community (but not a formal) standard, well-suited for exchange
-    - cf. CSV encoding: 50 16-bit floats ~ 50 x 5 (= `.` followed by up to four numbers) characters plus separator
-      - 50x5+49 = 299 characters, so we have a reduction by 50%
-  - in particular if compared with encoding as JSON array or plain text (as in TSV)
+  - in particular if compared with encoding as JSON array or plain text (as in CSV)
+    - CSV/TSV: 50 16-bit floats ~ 50 x 5 (= `.` followed by up to four numbers) characters plus separator
+      - 50x5+49 = 299 characters/bytes, so we have a reduction by 50%
   - nothing stops us from using this in conjunction with FrAC embeddings (then, just without the `rdf:value`)
 - CON, not solvable without introducing a new mediatype
   - not human-readable
@@ -53,10 +53,12 @@ for a list of 50 16-bit floats, we need 50 x 16 / 6 = 134 characters
   - we abuse existing conventions, in particular, tools would need how to spot "our" `application/octet-stream` implementations
     - can be solved be introducing a new mediatype
   - we can only encode vectors, not matrices or vectors
-    - can be solved by introducing a dimensionality attribute, but this requires registering/getrting approval for a new mediatype
+    - can be solved by introducing a dimensionality attribute, but this requires registering/getting approval for a new mediatype
+  - not as compact as exchanging plain binary data
+    - 50 16-bit floats are 100 bytes, so base64 encoding is about 50% larger than that
 - CON, solvable without introducing a new mediatype
   - data URLs do not provide provenance information. in particular, we cannot specify that one embedding comes from one embedding space/tool, and one from the other
     - maybe, this is not actually an issue, uin combination with, say FrAC, we can provide exactly that information
-  - because there are different encoding strategies, developers can be tempted to use their native `base64` encoding, and this might be different from the default encoding we specify
+  - because there are different encoding strategies, developers can be tempted to use the native `base64` encoding of their programming language, and this might be different from the default encoding we specify
     - in order to address this, we could add an **obligatory** checksum byte
     
